@@ -53,59 +53,78 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   theme: { logo: "https://authjs.dev/img/logo-sm.png" },
   adapter: UnstorageAdapter(storage),
   providers: [
-    Apple,
+    //Apple,
     // Atlassian,
     Auth0,
-    AzureB2C,
-    BankIDNorway,
-    BoxyHQSAML({
-      clientId: "dummy",
-      clientSecret: "dummy",
-      issuer: process.env.AUTH_BOXYHQ_SAML_ISSUER,
-    }),
-    Cognito,
-    Coinbase,
-    Discord,
-    Dropbox,
-    Facebook,
-    GitHub,
-    GitLab,
-    Google,
-    Hubspot,
-    Keycloak({ name: "Keycloak (bob/bob)" }),
-    LinkedIn,
-    MicrosoftEntraId,
-    Netlify,
-    Okta,
-    Passkey({
-      formFields: {
-        email: {
-          label: "Username",
-          required: true,
-          autocomplete: "username webauthn",
-        },
-      },
-    }),
-    Passage,
-    Pinterest,
-    Reddit,
-    Salesforce,
-    Slack,
-    Spotify,
-    Twitch,
-    Twitter,
-    Vipps({
-      issuer: "https://apitest.vipps.no/access-management-1.0/access/",
-    }),
-    WorkOS({ connection: process.env.AUTH_WORKOS_CONNECTION! }),
-    Zoom,
+    // AzureB2C,
+    // BankIDNorway,
+    // BoxyHQSAML({
+    //   clientId: "dummy",
+    //   clientSecret: "dummy",
+    //   issuer: process.env.AUTH_BOXYHQ_SAML_ISSUER,
+    // }),
+    // Cognito,
+    // Coinbase,
+    // Discord,
+    // Dropbox,
+    // Facebook,
+    // GitHub,
+    // GitLab,
+    // Google,
+    // Hubspot,
+    // Keycloak({ name: "Keycloak (bob/bob)" }),
+    // LinkedIn,
+    // MicrosoftEntraId,
+    // Netlify,
+    // Okta,
+    // Passkey({
+    //   formFields: {
+    //     email: {
+    //       label: "Username",
+    //       required: true,
+    //       autocomplete: "username webauthn",
+    //     },
+    //   },
+    // }),
+    // Passage,
+    // Pinterest,
+    // Reddit,
+    // Salesforce,
+    // Slack,
+    // Spotify,
+    // Twitch,
+    // Twitter,
+    // Vipps({
+    //   issuer: "https://apitest.vipps.no/access-management-1.0/access/",
+    // }),
+    // WorkOS({ connection: process.env.AUTH_WORKOS_CONNECTION! }),
+    // Zoom,
   ],
   basePath: "/auth",
   session: { strategy: "jwt" },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Redirect to home
+      if (url === '/forbidden' || url === `${baseUrl}/forbidden`) {
+        return baseUrl;
+      }
+
+      // Default behavior
+      // Allows relative callback URLs
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) {
+        return new URL(url);
+      }
+
+      return baseUrl;
+    },
     authorized({ request, auth }) {
       const { pathname } = request.nextUrl
       if (pathname === "/middleware-example") return !!auth
+      if (pathname === "/server-action") return !!auth
       return true
     },
     jwt({ token, trigger, session, account }) {
@@ -113,6 +132,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "keycloak") {
         return { ...token, accessToken: account.access_token }
       }
+      // Randomly throw an error to test error handling in callbacks
+      // This is just for testing purposes, you can remove it in production
+      if (Math.random() < 0.1)
+        throw new Error("Fake error to test error handling in callbacks")
+
       return token
     },
     async session({ session, token }) {
